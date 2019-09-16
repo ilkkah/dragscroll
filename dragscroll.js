@@ -28,6 +28,8 @@
     var removeEventListener = 'remove'+EventListener;
     var newScrollX, newScrollY;
     var moveThreshold = 4;
+    var speedX, speedY;
+    var lastScrollLeft, lastScrollTop;
 
     var dragged = [];
     var reset = function(i, el) {
@@ -55,8 +57,12 @@
                         ) {
                             pushed = 1;
                             moved = 0;
+
                             startX = lastClientX = e.clientX;
                             startY = lastClientY = e.clientY;
+                            lastScrollLeft = e.scrollLeft;
+                            lastScrollTop = e.scrollTop;
+
                             e.preventDefault();
                             e.stopPropagation();
                         }
@@ -73,7 +79,24 @@
                   }, 1
                 );
                 _window[addEventListener](
-                    mouseup, cont.mu = function() {pushed = 0;}, 0
+                    mouseup, cont.mu = function() {
+                        pushed = 0;
+
+                        // If we were moving and now released the mouse, we need to scroll a bit further to stop slowly/in a decelerating manner.
+                        if (moved && (speedX || speedY)) {
+                            function decelarate() {
+
+                                if (Math.abs(speedX) > 1 || Math.abs(speedY) > 1) {
+                                    scroller.scrollLeft += (speedX *= 0.96);
+                                    scroller.scrollTop += (speedY *= 0.96);
+
+                                    window.requestAnimationFrame(decelarate);
+                                }
+                            }
+
+                            window.requestAnimationFrame(decelarate);
+                        }
+                    }, 0
                 );
                 _document[addEventListener](
                   mouseenter, cont.me = function(e) {if (!e.buttonsPressed) pushed = 0;}, 0
@@ -88,6 +111,7 @@
                                moved = true;
                              }
                           if (moved) {
+
                             (scroller = el.scroller||el).scrollLeft -=
                                 newScrollX = (- lastClientX + (lastClientX=e.clientX));
                             scroller.scrollTop -=
@@ -96,6 +120,11 @@
                                 (scroller = _document.documentElement).scrollLeft -= newScrollX;
                                 scroller.scrollTop -= newScrollY;
                             }
+
+                            speedX = scroller.scrollLeft - lastScrollLeft;
+                            speedY = scroller.scrollTop - lastScrollTop;
+                            lastScrollLeft = scroller.scrollLeft;
+                            lastScrollTop = scroller.scrollTop;
                           }
                         }
                     }, 0
