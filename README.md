@@ -1,4 +1,4 @@
-### Changes compared to [](https://github.com/zach-capalbo/dragscroll)
+### Changes compared to [https://github.com/zach-capalbo/dragscroll](https://github.com/zach-capalbo/dragscroll)
 
 - Stop in a decelerating manner
 
