@@ -2,7 +2,7 @@
   "author": "Dmitry Prokashev <heliosframework@gmail.com>",
   "name": "dragscroll-ilkkah",
   "description": "Tiny library for drag-n-drop scrolling style",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "keywords": [
     "dragscroll",
     "scroll",

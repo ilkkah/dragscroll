@@ -87,8 +87,8 @@
                             function decelarate() {
 
                                 if (Math.abs(speedX) > 1 || Math.abs(speedY) > 1) {
-                                    scroller.scrollLeft += (speedX *= 0.96);
-                                    scroller.scrollTop += (speedY *= 0.96);
+                                    scroller.scrollLeft += (speedX *= 0.94);
+                                    scroller.scrollTop += (speedY *= 0.94);
 
                                     window.requestAnimationFrame(decelarate);
                                 }
