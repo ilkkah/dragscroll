@@ -30,8 +30,17 @@
     var moveThreshold = 4;
     var speedX, speedY;
     var lastScrollLeft, lastScrollTop;
-
+    var enabled = true;
     var dragged = [];
+
+    var disable = function() {
+        enabled = false;
+    }
+
+    var enable = function() {
+        enabled = true;
+    }
+
     var reset = function(i, el) {
         for (i = 0; i < dragged.length;) {
             el = dragged[i++];
@@ -50,10 +59,11 @@
                 (cont = el.container || el)[addEventListener](
                     mousedown,
                     cont.md = function(e) {
-                        if (!el.hasAttribute('nochilddrag') ||
-                            _document.elementFromPoint(
-                                e.pageX, e.pageY
-                            ) == cont
+                        if (enabled &&
+                            (!el.hasAttribute('nochilddrag') ||
+                                                        _document.elementFromPoint(
+                                                            e.pageX, e.pageY
+                                                        ) == cont)
                         ) {
                             pushed = 1;
                             moved = 0;
@@ -87,8 +97,8 @@
                             function decelarate() {
 
                                 if (Math.abs(speedX) > 1 || Math.abs(speedY) > 1) {
-                                    scroller.scrollLeft += (speedX *= 0.94);
-                                    scroller.scrollTop += (speedY *= 0.94);
+                                    scroller.scrollLeft += (speedX *= (Math.abs(speedX) < 3? 0.96: 0.94));
+                                    scroller.scrollTop += (speedY *= (Math.abs(speedY) < 3? 0.96: 0.94));
 
                                     window.requestAnimationFrame(decelarate);
                                 }
@@ -141,5 +151,7 @@
     }
 
     exports.reset = reset;
+    exports.enable = enable;
+    exports.disable = disable;
 }));
 
