@@ -1,6 +1,8 @@
 ### Changes compared to [https://github.com/zach-capalbo/dragscroll](https://github.com/zach-capalbo/dragscroll)
 
 - Stop in a decelerating manner
+- enable/disable
+- Initialization
 
 
 dragscroll

@@ -7,151 +7,135 @@
  */
 
 
-(function (root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        define(['exports'], factory);
-    } else if (typeof exports !== 'undefined') {
-        factory(exports);
-    } else {
-        factory((root.dragscroll = {}));
+var _window = window;
+var _document = document;
+var mousemove = 'mousemove';
+var mouseup = 'mouseup';
+var mousedown = 'mousedown';
+var mouseenter = 'mouseenter';
+var click = 'click';
+var EventListener = 'EventListener';
+var addEventListener = 'add'+EventListener;
+var removeEventListener = 'remove'+EventListener;
+var newScrollX, newScrollY;
+var moveThreshold = 4;
+var speedX, speedY;
+var lastScrollLeft, lastScrollTop;
+var enabled = true;
+var dragged = [];
+
+function disable() {
+    enabled = false;
+}
+
+function enable() {
+    enabled = true;
+}
+
+function dragscroll() {
+    var i, el;
+
+    for (i = 0; i < dragged.length;) {
+        el = dragged[i++];
+        el = el.container || el;
+        el[removeEventListener](mousedown, el.md, 0);
+        el[removeEventListener](click, el.mc, 0);
+        _window[removeEventListener](mouseup, el.mu, 0);
+        _window[removeEventListener](mousemove, el.mm, 0);
+        _document[removeEventListener](mouseenter, el.me, 0);
     }
-}(this, function (exports) {
-    var _window = window;
-    var _document = document;
-    var mousemove = 'mousemove';
-    var mouseup = 'mouseup';
-    var mousedown = 'mousedown';
-    var mouseenter = 'mouseenter';
-    var click = 'click';
-    var EventListener = 'EventListener';
-    var addEventListener = 'add'+EventListener;
-    var removeEventListener = 'remove'+EventListener;
-    var newScrollX, newScrollY;
-    var moveThreshold = 4;
-    var speedX, speedY;
-    var lastScrollLeft, lastScrollTop;
-    var enabled = true;
-    var dragged = [];
 
-    var disable = function() {
-        enabled = false;
-    }
+    // cloning into array since HTMLCollection is updated dynamically
+    dragged = [].slice.call(_document.getElementsByClassName('dragscroll'));
+    for (i = 0; i < dragged.length;) {
+        (function(el, lastClientX, lastClientY, startX, startY, moved, pushed, scroller, cont){
+            (cont = el.container || el)[addEventListener](
+                mousedown,
+                cont.md = function(e) {
+                    if (enabled &&
+                        (!el.hasAttribute('nochilddrag') ||
+                                                    _document.elementFromPoint(
+                                                        e.pageX, e.pageY
+                                                    ) == cont)
+                    ) {
+                        pushed = 1;
+                        moved = 0;
 
-    var enable = function() {
-        enabled = true;
-    }
+                        startX = lastClientX = e.clientX;
+                        startY = lastClientY = e.clientY;
+                        lastScrollLeft = e.scrollLeft;
+                        lastScrollTop = e.scrollTop;
 
-    var reset = function(i, el) {
-        for (i = 0; i < dragged.length;) {
-            el = dragged[i++];
-            el = el.container || el;
-            el[removeEventListener](mousedown, el.md, 0);
-            el[removeEventListener](click, el.mc, 0);
-            _window[removeEventListener](mouseup, el.mu, 0);
-            _window[removeEventListener](mousemove, el.mm, 0);
-            _document[removeEventListener](mouseenter, el.me, 0);
-        }
-
-        // cloning into array since HTMLCollection is updated dynamically
-        dragged = [].slice.call(_document.getElementsByClassName('dragscroll'));
-        for (i = 0; i < dragged.length;) {
-            (function(el, lastClientX, lastClientY, startX, startY, moved, pushed, scroller, cont){
-                (cont = el.container || el)[addEventListener](
-                    mousedown,
-                    cont.md = function(e) {
-                        if (enabled &&
-                            (!el.hasAttribute('nochilddrag') ||
-                                                        _document.elementFromPoint(
-                                                            e.pageX, e.pageY
-                                                        ) == cont)
-                        ) {
-                            pushed = 1;
-                            moved = 0;
-
-                            startX = lastClientX = e.clientX;
-                            startY = lastClientY = e.clientY;
-                            lastScrollLeft = e.scrollLeft;
-                            lastScrollTop = e.scrollTop;
-
-                            e.preventDefault();
-                            e.stopPropagation();
-                        }
-                    }, 0
-                );
-                (cont = el.container || el)[addEventListener](
-                  click,
-                  cont.mc = function(e) {
-                    if (moved) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      moved = 0; pushed = 0;
+                        e.preventDefault();
+                        e.stopPropagation();
                     }
-                  }, 1
-                );
-                _window[addEventListener](
-                    mouseup, cont.mu = function() {
-                        pushed = 0;
+                }, 0
+            );
+            (cont = el.container || el)[addEventListener](
+              click,
+              cont.mc = function(e) {
+                if (moved) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  moved = 0; pushed = 0;
+                }
+              }, 1
+            );
+            _window[addEventListener](
+                mouseup, cont.mu = function() {
+                    pushed = 0;
 
-                        // If we were moving and now released the mouse, we need to scroll a bit further to stop slowly/in a decelerating manner.
-                        if (moved && (speedX || speedY)) {
-                            function decelarate() {
+                    // If we were moving and now released the mouse, we need to scroll a bit further to stop slowly/in a decelerating manner.
+                    if (moved && (speedX || speedY)) {
+                        function decelarate() {
 
-                                if (Math.abs(speedX) > 1 || Math.abs(speedY) > 1) {
-                                    scroller.scrollLeft += (speedX *= (Math.abs(speedX) < 3? 0.96: 0.94));
-                                    scroller.scrollTop += (speedY *= (Math.abs(speedY) < 3? 0.96: 0.94));
+                            if (Math.abs(speedX) > 1 || Math.abs(speedY) > 1) {
+                                scroller.scrollLeft += (speedX *= (Math.abs(speedX) < 3? 0.96: 0.94));
+                                scroller.scrollTop += (speedY *= (Math.abs(speedY) < 3? 0.96: 0.94));
 
-                                    window.requestAnimationFrame(decelarate);
-                                }
+                                window.requestAnimationFrame(decelarate);
                             }
-
-                            window.requestAnimationFrame(decelarate);
                         }
-                    }, 0
-                );
-                _document[addEventListener](
-                  mouseenter, cont.me = function(e) {if (!e.buttonsPressed) pushed = 0;}, 0
-                );
-                _window[addEventListener](
-                    mousemove,
-                    cont.mm = function(e) {
-                        if (pushed) {
-                          if (!moved &&
-                            (Math.abs(e.clientX - startX) > moveThreshold ||
-                             Math.abs(e.clientY - startY) > moveThreshold)) {
-                               moved = true;
-                             }
-                          if (moved) {
 
-                            (scroller = el.scroller||el).scrollLeft -=
-                                newScrollX = (- lastClientX + (lastClientX=e.clientX));
-                            scroller.scrollTop -=
-                                newScrollY = (- lastClientY + (lastClientY=e.clientY));
-                            if (el == _document.body) {
-                                (scroller = _document.documentElement).scrollLeft -= newScrollX;
-                                scroller.scrollTop -= newScrollY;
-                            }
+                        window.requestAnimationFrame(decelarate);
+                    }
+                }, 0
+            );
+            _document[addEventListener](
+              mouseenter, cont.me = function(e) {if (!e.buttonsPressed) pushed = 0;}, 0
+            );
+            _window[addEventListener](
+                mousemove,
+                cont.mm = function(e) {
+                    if (pushed) {
+                      if (!moved &&
+                        (Math.abs(e.clientX - startX) > moveThreshold ||
+                         Math.abs(e.clientY - startY) > moveThreshold)) {
+                           moved = true;
+                         }
+                      if (moved) {
 
-                            speedX = scroller.scrollLeft - lastScrollLeft;
-                            speedY = scroller.scrollTop - lastScrollTop;
-                            lastScrollLeft = scroller.scrollLeft;
-                            lastScrollTop = scroller.scrollTop;
-                          }
+                        (scroller = el.scroller||el).scrollLeft -=
+                            newScrollX = (- lastClientX + (lastClientX=e.clientX));
+                        scroller.scrollTop -=
+                            newScrollY = (- lastClientY + (lastClientY=e.clientY));
+                        if (el == _document.body) {
+                            (scroller = _document.documentElement).scrollLeft -= newScrollX;
+                            scroller.scrollTop -= newScrollY;
                         }
-                    }, 0
-                );
-             })(dragged[i++]);
-        }
+
+                        speedX = scroller.scrollLeft - lastScrollLeft;
+                        speedY = scroller.scrollTop - lastScrollTop;
+                        lastScrollLeft = scroller.scrollLeft;
+                        lastScrollTop = scroller.scrollTop;
+                      }
+                    }
+                }, 0
+            );
+         })(dragged[i++]);
     }
+}
 
-      
-    if (_document.readyState == 'complete') {
-        reset();
-    } else {
-        _window[addEventListener]('load', reset, 0);
-    }
-
-    exports.reset = reset;
-    exports.enable = enable;
-    exports.disable = disable;
-}));
-
+dragscroll.enable = enable;
+dragscroll.disable = disable;
+module.exports = dragscroll;
