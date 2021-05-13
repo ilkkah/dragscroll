@@ -21,6 +21,7 @@ var newScrollX, newScrollY;
 var moveThreshold = 4;
 var speedX, speedY;
 var lastScrollLeft, lastScrollTop;
+var lastWidth, lastHeight;
 var enabled = true;
 var dragged = [];
 
@@ -33,7 +34,7 @@ function enable() {
 }
 
 function dragscroll() {
-    var i, el;
+    var i, el, direction;
 
     for (i = 0; i < dragged.length;) {
         el = dragged[i++];
@@ -60,11 +61,14 @@ function dragscroll() {
                     ) {
                         pushed = 1;
                         moved = 0;
+                        direction = 0;
 
                         startX = lastClientX = e.clientX;
                         startY = lastClientY = e.clientY;
                         lastScrollLeft = e.scrollLeft;
                         lastScrollTop = e.scrollTop;
+                        lastWidth = e.scrollWidth || 0;
+                        lastHeight = e.scrollHeight || 0;
 
                         e.preventDefault();
                         e.stopPropagation();
@@ -95,8 +99,12 @@ function dragscroll() {
 
                                 window.requestAnimationFrame(decelarate);
                             }
+                            else {
+                                decelarating = false;
+                            }
                         }
 
+                        decelarating = true;
                         window.requestAnimationFrame(decelarate);
                     }
                 }, 0
@@ -115,19 +123,26 @@ function dragscroll() {
                          }
                       if (moved) {
 
+                        var widthChange = lastWidth? el.scrollWidth - lastWidth: 0;
+                        var heightChange = lastHeight ? el.scrollHeight - lastHeight: 0;
+
                         (scroller = el.scroller||el).scrollLeft -=
-                            newScrollX = (- lastClientX + (lastClientX=e.clientX));
+                            newScrollX = (- lastClientX + widthChange + (lastClientX=e.clientX));
                         scroller.scrollTop -=
-                            newScrollY = (- lastClientY + (lastClientY=e.clientY));
+                            newScrollY = (- lastClientY + heightChange + (lastClientY=e.clientY));
                         if (el == _document.body) {
                             (scroller = _document.documentElement).scrollLeft -= newScrollX;
                             scroller.scrollTop -= newScrollY;
                         }
 
-                        speedX = scroller.scrollLeft - lastScrollLeft;
-                        speedY = scroller.scrollTop - lastScrollTop;
+                        speedX = scroller.scrollLeft - (lastScrollLeft || scroller.scrollLeft);
+                        speedY = scroller.scrollTop - (lastScrollTop || scroller.scrollTop);
+
                         lastScrollLeft = scroller.scrollLeft;
                         lastScrollTop = scroller.scrollTop;
+
+                        lastWidth = scroller.scrollWidth;
+                        lastHeight = scroller.scrollHeight;
                       }
                     }
                 }, 0
